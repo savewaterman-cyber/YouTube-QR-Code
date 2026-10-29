@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube QR Code 生成器</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: 'Microsoft JhengHei', Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+            max-width: 600px;
+            width: 100%;
+        }
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 24px;
+        }
+        .input-section {
+            margin: 20px 0;
+            text-align: left;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        input[type="text"], input[type="url"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            box-sizing: border-box;
+            transition: border-color 0.3s;
+        }
+        input[type="text"]:focus, input[type="url"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .generate-btn {
+            width: 100%;
+            padding: 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+        .generate-btn:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        #qrcode-container {
+            display: none;
+            margin-top: 30px;
+        }
+        #qrcode-container.show {
+            display: block;
+        }
+        #qrcode {
+            display: inline-block;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        #qrcode img {
+            cursor: pointer;
+        }
+        .caption {
+            font-size: 20px;
+            color: #333;
+            margin-top: 20px;
+            font-weight: bold;
+            line-height: 1.6;
+        }
+        .url-display {
+            font-size: 12px;
+            color: #666;
+            word-break: break-all;
+            margin-top: 15px;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 5px;
+        }
+        .download-btn {
+            margin-top: 20px;
+            padding: 12px 30px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .download-btn:hover {
+            background: #218838;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
+        }
+        .instructions {
+            margin-top: 20px;
+            padding: 15px;
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            border-radius: 5px;
+            text-align: left;
+            font-size: 14px;
+            color: #856404;
+        }
+        .instructions strong {
+            display: block;
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📹 YouTube QR Code 生成器</h1>
+        
+        <div class="input-section">
+            <div class="input-group">
+                <label for="url-input">YouTube 網址：</label>
+                <input type="url" id="url-input" placeholder="https://www.youtube.com/watch?v=..." value="https://www.youtube.com/watch?v=kCVGWpTcwmk">
+            </div>
+            
+            <div class="input-group">
+                <label for="caption-input">圖片說明文字：</label>
+                <input type="text" id="caption-input" placeholder="例：第2集5月13日培力課程活動花絮" value="第2集5月13日培力課程活動花絮">
+            </div>
+            
+            <button class="generate-btn" onclick="generateQRCode()">
+                🎨 生成 QR Code
+            </button>
+        </div>
+
+        <div id="qrcode-container">
+            <div id="qrcode"></div>
+            <div class="caption" id="caption-display"></div>
+            <div class="url-display" id="url-display"></div>
+            <button class="download-btn" onclick="downloadQRCode()">
+                💾 下載 PNG 圖片
+            </button>
+            <div class="instructions">
+                <strong>📌 如果下載按鈕無效：</strong>
+                在 QR Code 圖片上按右鍵 → 選擇「另存圖片」或「將圖片另存為」即可儲存 PNG 檔案
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentQRCode = null;
+        let currentURL = '';
+        let currentCaption = '';
+
+        function generateQRCode() {
+            const urlInput = document.getElementById('url-input').value.trim();
+            const captionInput = document.getElementById('caption-input').value.trim();
+            
+            if (!urlInput) {
+                alert('請輸入 YouTube 網址！');
+                return;
+            }
+            
+            currentURL = urlInput;
+            currentCaption = captionInput;
+            
+            // 清除舊的 QR Code
+            const qrcodeDiv = document.getElementById('qrcode');
+            qrcodeDiv.innerHTML = '';
+            
+            // 生成新的 QR Code
+            currentQRCode = new QRCode(qrcodeDiv, {
+                text: urlInput,
+                width: 256,
+                height: 256,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+            
+            // 更新顯示
+            document.getElementById('caption-display').textContent = captionInput;
+            document.getElementById('url-display').textContent = urlInput;
+            document.getElementById('qrcode-container').classList.add('show');
+            
+            // 滾動到 QR Code
+            setTimeout(() => {
+                document.getElementById('qrcode-container').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 100);
+        }
+
+        function downloadQRCode() {
+            setTimeout(() => {
+                try {
+                    const qrElement = document.querySelector('#qrcode');
+                    const canvas = qrElement.querySelector('canvas');
+                    const img = qrElement.querySelector('img');
+                    
+                    // 生成檔名
+                    const fileName = currentCaption ? 
+                        currentCaption.replace(/[\/\\:*?"<>|]/g, '_') + '_QRCode.png' : 
+                        'QRCode.png';
+                    
+                    if (canvas) {
+                        canvas.toBlob(function(blob) {
+                            const url = URL.createObjectURL(blob);
+                            const link = document.createElement('a');
+                            link.download = fileName;
+                            link.href = url;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                            URL.revokeObjectURL(url);
+                        }, 'image/png');
+                    } else if (img) {
+                        const link = document.createElement('a');
+                        link.download = fileName;
+                        link.href = img.src;
+                        link.target = '_blank';
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                    } else {
+                        alert('請在 QR Code 圖片上按右鍵，選擇「另存圖片」來下載');
+                    }
+                } catch (error) {
+                    console.error('下載錯誤:', error);
+                    alert('請在 QR Code 圖片上按右鍵，選擇「另存圖片」來下載');
+                }
+            }, 300);
+        }
+
+        // 按 Enter 鍵也能生成
+        document.getElementById('url-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') generateQRCode();
+        });
+        document.getElementById('caption-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') generateQRCode();
+        });
+    </script>
+</body>
+</html>
